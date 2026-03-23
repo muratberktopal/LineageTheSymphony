@@ -161,11 +161,13 @@ public class MinionAI : MonoBehaviour
     // Hata CS0103: 'ExecuteWorkLogic' çözümüdür
     void ExecuteWorkLogic()
     {
+        MinionFeedback fb = GetComponentInChildren<MinionFeedback>();
         if (currentState == "ChoppingWood")
         {
             float amount = stats.workSpeed;
             if (cards.HasCard("Sinir") && emotions.GetI("Angry") > 0.5f) amount *= 1.5f;
             ResourceManager.Instance.Add("wood", amount * Time.deltaTime * 2f);
+            if (fb != null) fb.TriggerEmoji("Wood"); // Balta emojisi tetikle
         }
         else if (currentState == "Fishing")
         {
@@ -174,6 +176,7 @@ public class MinionAI : MonoBehaviour
             {
                 ResourceManager.Instance.Add("food", 2f);
                 needs.Change("hunger", -5f);
+                if (fb != null) fb.TriggerEmoji("Fish");
             }
         }
         else if (currentState == "Building")
@@ -662,16 +665,27 @@ public class MinionAI : MonoBehaviour
     }
 
     // ── FİZİKSEL YARDIMCILAR (KUSURSUZ HAREKET SİSTEMİ) ─────
-    void SetState(string newState)
+    public void SetState(string newState)
     {
         if (currentState != newState)
         {
             stateTimer = 0f;
-            // YENİ: Durum değişince kafada yazı çıksın
-            var feedback = GetComponentInChildren<MinionFeedback>();
-            if (feedback != null) feedback.ShowText(newState, Color.white);
+            currentState = newState;
+
+            // KAFADA DURUM YAZDIRMA
+            MinionFeedback fb = GetComponentInChildren<MinionFeedback>();
+            if (fb != null)
+            {
+                // Durum isimlerini daha "insancıl" yapalım
+                string displayName = newState;
+                if (newState == "ChoppingWood") displayName = "Odun Kesiyor";
+                if (newState == "Fishing") displayName = "Balık Tutuyor";
+                if (newState == "Building") displayName = "İnşaat Yapıyor";
+                if (newState == "Sleeping") displayName = "Zzz...";
+
+                fb.ShowText(displayName, Color.white);
+            }
         }
-        currentState = newState;
         if (agent.isActiveAndEnabled) agent.isStopped = false;
     }
 

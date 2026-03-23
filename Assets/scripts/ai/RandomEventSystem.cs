@@ -152,72 +152,103 @@ public class RandomEventSystem : MonoBehaviour
 
     void Apply(EventOutcome o)
     {
-        switch(o.outcomeType)
+        // 1. Önce fb'yi tanımlıyoruz ki aşağıdaki tüm case'ler onu tanısın (Hata CS0841 Çözümü)
+        MinionFeedback fb = GetComponentInChildren<MinionFeedback>();
+
+        switch (o.outcomeType)
         {
             case EventOutcome.OutcomeType.SetEmotion:
-                emotions.SetEmotion(o.parameter, o.value); break;
+                emotions.SetEmotion(o.parameter, o.value);
+                break;
 
             case EventOutcome.OutcomeType.ChangeNeed:
-                needs.Change(o.parameter, o.value); break;
+                needs.Change(o.parameter, o.value);
+                break;
 
             case EventOutcome.OutcomeType.ChangeRelationship:
                 string rTarget = o.parameter == "spouse" && ai.stats.spouse != null
                     ? ai.stats.spouse.stats.name : o.parameter;
-                social.UpdateRelationship(rTarget, o.value, "EventOutcome"); break;
+                social.UpdateRelationship(rTarget, o.value, "EventOutcome");
+                break;
 
             case EventOutcome.OutcomeType.ChangeReputation:
-                ai.stats.reputation = Mathf.Clamp(ai.stats.reputation + o.value, 0, 100); break;
+                ai.stats.reputation = Mathf.Clamp(ai.stats.reputation + o.value, 0, 100);
+                break;
 
             case EventOutcome.OutcomeType.ChangeStat:
-                ChangeStat(o.parameter, o.value); break;
+                ChangeStat(o.parameter, o.value);
+                // CANI AZALDIYSA HASTALIK EMOJİSİ (Hata CS0162 Çözümü: Break'ten önce yazdık)
+                if (o.parameter == "health" && o.value < 0 && fb != null)
+                {
+                    fb.TriggerEmoji("Sick");
+                    fb.ShowText("Aşık Oldu! <3", Color.magenta);
+                }
+                break;
 
             case EventOutcome.OutcomeType.AttackMinion:
-                AttackTarget(o.parameter); break;
+                AttackTarget(o.parameter);
+                break;
 
             case EventOutcome.OutcomeType.KillMinion:
-                KillTarget(o.parameter); break;
+                KillTarget(o.parameter);
+                break;
 
             case EventOutcome.OutcomeType.InventItem:
-                InventionManager.Instance.RegisterInvention(o.parameter, ai.stats.name); break;
+                InventionManager.Instance.RegisterInvention(o.parameter, ai.stats.name);
+                break;
 
             case EventOutcome.OutcomeType.TriggerCascade:
-                cascade.TriggerCascade(o.parameter, ai.stats.name, o.value); break;
+                cascade.TriggerCascade(o.parameter, ai.stats.name, o.value);
+                // KAVGA ÇIKTIYSA KURU KAFA
+                if (o.parameter == "Fight" && fb != null)
+                {
+                    fb.TriggerEmoji("Dead");
+                    fb.ShowText("KAVGA!!!", Color.red);
+                }                                                
+                break;
 
             case EventOutcome.OutcomeType.ShowNotification:
-
                 string msg = o.notificationMessage
-                    .Replace("{name}",ai.stats.name)
-                    .Replace("{target}",FindNearest()?.stats.name ?? "biri")
-                    .Replace("{spouse}",ai.stats.spouse?.stats.name ?? "")
-                    .Replace("{rival}",FindNearestEnemy()?.stats.name ?? "rakip");
-
-                var fb = GetComponentInChildren<MinionFeedback>();
-                if (fb != null) fb.ShowText("!", Color.red);
-                NotificationManager.Instance.Show(msg, o.notificationType); break;
+                    .Replace("{name}", ai.stats.name)
+                    .Replace("{target}", FindNearest()?.stats.name ?? "biri")
+                    .Replace("{spouse}", ai.stats.spouse?.stats.name ?? "")
+                    .Replace("{rival}", FindNearestEnemy()?.stats.name ?? "rakip");
+                NotificationManager.Instance.Show(msg, o.notificationType);
+                break;
 
             case EventOutcome.OutcomeType.StealFrom:
-                StealFrom(o.parameter); break;
+                StealFrom(o.parameter);
+                break;
 
             case EventOutcome.OutcomeType.Marry:
-                MarryTarget(o.parameter); break;
+                MarryTarget(o.parameter);
+                // EVLENİNCE KALP
+                if (fb != null) fb.TriggerEmoji("Love");
+                break;
 
             case EventOutcome.OutcomeType.Divorce:
-                DivorceSpouse(); break;
+                DivorceSpouse();
+                break;
 
             case EventOutcome.OutcomeType.HealMinion:
-                HealTarget(o.parameter); break;
+                HealTarget(o.parameter);
+                break;
 
             case EventOutcome.OutcomeType.MakeLeader:
-                PowerSystem.Instance.SetLeader(ai); break;
+                PowerSystem.Instance.SetLeader(ai);
+                break;
 
             case EventOutcome.OutcomeType.BecomeFriends:
-                BecomeFriendsWithNearest(); break;
+                BecomeFriendsWithNearest();
+                break;
 
             case EventOutcome.OutcomeType.BecomeEnemies:
-                BecomeEnemiesWithTarget(o.parameter); break;
+                BecomeEnemiesWithTarget(o.parameter);
+                break;
 
             case EventOutcome.OutcomeType.FormFaction:
-                social.FormFaction(o.parameter); break;
+                social.FormFaction(o.parameter);
+                break;
         }
     }
 
