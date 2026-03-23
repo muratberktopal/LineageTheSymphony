@@ -5,6 +5,11 @@ TagManager:
   serializedVersion: 3
   tags:
   - Tree
+  - FishingSpot
+  - BuildSite
+  - Shelter
+  - Campfire
+  - Danger
   layers:
   - Default
   - TransparentFX
