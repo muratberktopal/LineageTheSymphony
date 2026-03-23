@@ -1107,7 +1107,7 @@ GameObject:
   - component: {fileID: 407094370}
   m_Layer: 0
   m_Name: gecekondubolgesi
-  m_TagString: Untagged
+  m_TagString: BuildSite
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4052,7 +4052,7 @@ GameObject:
   - component: {fileID: 1489997262}
   m_Layer: 0
   m_Name: gecekondubolgesi
-  m_TagString: Untagged
+  m_TagString: BuildSite
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6701,7 +6701,7 @@ GameObject:
   - component: {fileID: 2119174795}
   m_Layer: 0
   m_Name: gecekondubolgesi
-  m_TagString: Untagged
+  m_TagString: BuildSite
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
