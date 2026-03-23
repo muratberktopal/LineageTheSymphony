@@ -26,11 +26,15 @@ public class RandomEventSystem : MonoBehaviour
     {
         int gen = ai.stats.generation;
         int pop = GenerationManager.Instance.GetTotalAliveCount();
-        if (gen >= 4 || pop >= 10) return 5;
-        if (gen >= 3) return 4;
-        if (gen >= 2) return 3;
-        if (gen >= 1) return 2;
-        return 1;  // ← SORUN BURADA
+        // Nesil 1 = sadece temel olaylar (priority 1)
+        // Nesil 2 = priority 1-2
+        // Nesil 3 = priority 1-3
+        // Nesil 4+ veya nüfus 10+ = hepsi
+        if(gen >= 4 || pop >= 10) return 5;
+        if(gen >= 3) return 4;
+        if(gen >= 2) return 3;
+        if(gen == 1) return 1;  // Sadece P1 — nesil 1
+        return 1;
     }
 
     void Start()
@@ -52,28 +56,33 @@ public class RandomEventSystem : MonoBehaviour
 
     void CheckEvents()
     {
-        if (!ai.stats.isAlive) return;
+        if(!ai.stats.isAlive) return;
+
+        // Depresyon varsa iş reddi
+        if(emotions.CanRefuseWork() && Random.value < 0.3f) return;
 
         int maxPri = AllowedMaxPriority();
-        Debug.Log($"[{ai.stats.name}] CheckEvents çalıştı. MaxPriority: {maxPri}, EventSayısı: {allEvents.Count}");
 
-        int passed = 0;
-        foreach (var evt in allEvents)
+        foreach(var evt in allEvents)
         {
-            if (evt.priority > maxPri) continue;
-            if (evt.isUnique && triggeredUnique.Contains(evt.eventId)) continue;
-            if (lastTriggered.TryGetValue(evt.eventId, out float last))
-                if (Time.time - last < evt.cooldown) continue;
-            if (!CheckAll(evt.conditions)) continue;
-            if (Random.value > evt.triggerChance) continue;
+            // Öncelik filtresi
+            if(evt.priority > maxPri) continue;
 
-            passed++;
-            Debug.Log($"[{ai.stats.name}] EVENT TETİKLENDİ: {evt.eventId}");
+            // Unique kontrolü
+            if(evt.isUnique && triggeredUnique.Contains(evt.eventId)) continue;
+
+            // Cooldown kontrolü
+            if(lastTriggered.TryGetValue(evt.eventId, out float last))
+                if(Time.time - last < evt.cooldown) continue;
+
+            // Koşul kontrolü
+            if(!CheckAll(evt.conditions)) continue;
+
+            // Şans kontrolü
+            if(Random.value > evt.triggerChance) continue;
+
             Trigger(evt);
         }
-
-        if (passed == 0)
-            Debug.Log($"[{ai.stats.name}] Hiçbir event koşulu sağlanamadı.");
     }
 
     bool CheckAll(List<EventCondition> conds)

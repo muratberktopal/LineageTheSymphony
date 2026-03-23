@@ -35,7 +35,7 @@ public class MinionAI : MonoBehaviour
 
     // Behaviour tree tick hızı
     float btTimer    = 0f;
-    const float BT_TICK = 0.5f;
+    const float BT_TICK = 2.0f;
 
     // Hedefler
     GameObject currentTarget;
@@ -100,33 +100,63 @@ public class MinionAI : MonoBehaviour
     // ── BEHAVIOUR TREE ────────────────────────────────────
     void RunBehaviourTree()
     {
-        // Depresyon varsa iş reddedebilir
-        if(emotions.CanRefuseWork() && Random.value < 0.3f)
+        if (emotions.CanRefuseWork() && Random.value < 0.3f) { SetState("DepressedIdle"); return; }
+
+        // 1. ÖLÜM VE ACİL DURUM
+        if (CheckDeath()) return;
+        if (RunEmergency()) return;
+
+        // 2. TEMEL HAYATTA KALMA (KARTTAN ÖNCE)
+        // "Karnı açsa Avcı olmasa da balık tutar, evi yoksa odun kırar" mantığı
+        if (RunBasicSurvival()) return;
+
+        // 3. KART DAVRANIŞLARI (Mesleki Uzmanlık)
+        // Karnı toksa, köyün odunu/yemeği fena değilse artık kartına göre davranır
+        if (RunCardBehaviors()) return;
+
+        // 4. GECE VE SOSYAL (İş yoksa sosyalleşir veya uyur)
+        if (RunEmotionalReactions()) return;
+        if (RunNightRoutine()) return;
+        if (RunSocialNeeds()) return;
+
+        // 5. DEFAULT (Tamamen boşta kalırsa)
+        RunDefault();
+    }
+
+    bool RunBasicSurvival()
+    {
+        // 1. Kendi karnı çok açsa (her şeyden önemli)
+        if (needs.hunger > 50f)
         {
-            SetState("DepressedIdle");
-            return;
+            if (GoFish()) return true;
         }
 
-        // 1. ÖLÜM KONTROLÜ
-        if(CheckDeath()) return;
+        // 2. Köyde yiyecek bitiyorsa (Dayanışma)
+        if (ResourceManager.Instance.foodCount < 10f)
+        {
+            if (GoFish()) return true;
+        }
 
-        // 2. ACİL DURUM — hayatta kal
-        if(RunEmergency()) return;
+        // 3. Evi yoksa
+        if (!HasShelter())
+        {
+            if (ResourceManager.Instance.woodCount >= 10f)
+            {
+                if (Build()) return true; // Malzeme varsa yap
+            }
+            else
+            {
+                if (ChopWood()) return true; // Malzeme yoksa zorunlu odun kır
+            }
+        }
 
-        // 3. DUYGU TEPKİLERİ
-        if(RunEmotionalReactions()) return;
+        // 4. Köyde odun bitiyorsa (Ateş ve ev için lazım)
+        if (ResourceManager.Instance.woodCount < 10f)
+        {
+            if (ChopWood()) return true;
+        }
 
-        // 4. GECE RUTINI
-        if(RunNightRoutine()) return;
-
-        // 5. SOSYAL İHTİYAÇLAR
-        if(RunSocialNeeds()) return;
-
-        // 6. KART DAVRANIŞLARI
-        if(RunCardBehaviors()) return;
-
-        // 7. DEFAULT
-        RunDefault();
+        return false;
     }
 
     // ── 1. ÖLÜM ───────────────────────────────────────────
@@ -440,35 +470,24 @@ public class MinionAI : MonoBehaviour
         return true;
     }
 
-    void TryMate()
+    bool TryMate()
     {
-        SetState("LookingForMate");
-        foreach(var m in FindObjectsByType<MinionAI>(FindObjectsSortMode.None))
+        foreach (var m in FindObjectsByType<MinionAI>(FindObjectsSortMode.None))
         {
-            if(m == this || !m.stats.isAlive) continue;
-            if(m.stats.isFemale == stats.isFemale) continue;
-            if(m.stats.isMarried) continue;
-            if(social.GetRelationship(m.stats.name) < 55f) continue;
+            if (m == this || !m.stats.isAlive || m.stats.isFemale == stats.isFemale || m.stats.isMarried) continue;
+            if (social.GetRelationship(m.stats.name) < 55f) continue;
 
+            SetState("LookingForMate");
             MoveTo(m.transform.position);
-            if(Vector3.Distance(transform.position, m.transform.position) < 2f)
+            if (Vector3.Distance(transform.position, m.transform.position) < 2f)
             {
                 stats.lastMatingTime = Time.time;
                 m.stats.lastMatingTime = Time.time;
-
-                // Çiftleşme — doğum olasılığı
-                if(Random.value < 0.4f)
-                    GenerationManager.Instance.TryBirth(this, m);
-
-                // İlk çiftleşme → Romantik kart
-                if(!memory.HasExperienced("FirstMating"))
-                {
-                    memory.RecordEvent("FirstMating","",0.5f);
-                    cards.OnEventOccured("FirstMating");
-                }
+                if (Random.value < 0.4f) GenerationManager.Instance.TryBirth(this, m);
             }
-            return;
+            return true; // Eş buldu ve ilgileniyor
         }
+        return false; // Kimseyi bulamadı, pas geç
     }
 
     // ── 6. KART DAVRANIŞLARI ──────────────────────────────
@@ -535,50 +554,55 @@ public class MinionAI : MonoBehaviour
         return false;
     }
 
-    void ChopWood()
+    bool ChopWood()
     {
-        SetState("ChoppingWood");
         var tree = FindNearest("Tree");
-        if(tree == null) return;
+        if (tree == null) return false; // Ağaç yoksa iptal, diğer işe geç
+
+        SetState("ChoppingWood");
         MoveTo(tree.transform.position);
-        if(Vector3.Distance(transform.position, tree.transform.position) < 1.5f)
+        if (Vector3.Distance(transform.position, tree.transform.position) < 2.5f)
         {
             float amount = stats.workSpeed;
-            if(cards.HasCard("Sinir") && emotions.GetI("Angry") > 0.5f) amount *= 1.5f;
+            if (cards.HasCard("Sinir") && emotions.GetI("Angry") > 0.5f) amount *= 1.5f;
             ResourceManager.Instance.Add("wood", amount * Time.deltaTime * 2f);
         }
+        return true;
     }
 
-    void GoFish()
+    bool GoFish()
     {
-        SetState("Fishing");
         var spot = FindNearest("FishingSpot");
-        if(spot == null) return;
+        if (spot == null) return false;
+
+        SetState("Fishing");
         MoveTo(spot.transform.position);
-        if(Vector3.Distance(transform.position, spot.transform.position) < 1.5f)
+        if (Vector3.Distance(transform.position, spot.transform.position) < 2.5f)
         {
             float chance = InventionManager.Instance.IsDiscovered("FishingNet") ? 0.8f : 0.5f;
-            if(Random.value < chance * Time.deltaTime)
+            if (Random.value < chance * Time.deltaTime)
             {
                 ResourceManager.Instance.Add("food", 2f);
                 needs.Change("hunger", -5f);
             }
         }
+        return true;
     }
 
-    void Build()
+    bool Build()
     {
-        SetState("Building");
         var site = FindNearest("BuildSite");
-        if(site == null) return;
+        if (site == null) return false;
+
+        SetState("Building");
         MoveTo(site.transform.position);
-        if(Vector3.Distance(transform.position, site.transform.position) < 1.5f)
+        if (Vector3.Distance(transform.position, site.transform.position) < 2.5f)
         {
             stats.buildingsConstructed++;
             ResourceManager.Instance.Spend("wood", 10f);
-            NotificationManager.Instance.Show(
-                stats.name + " bir yapı tamamladı!", NotificationType.Social);
+            NotificationManager.Instance.Show(stats.name + " bir yapı tamamladı!", NotificationType.Social);
         }
+        return true;
     }
 
     void HealNearby()
@@ -674,12 +698,14 @@ public class MinionAI : MonoBehaviour
     void Idle()
     {
         SetState("Idle");
-        agent.isStopped = true;
-
-        // Boşta kalma birikiyor → icat tetikleyebilir
-        if(cards.HasCard("Zeka") && memory.GetThreshold("idle_long") > 180f)
+        // Sadece durması gerektiğinde durdur, her frame fren yapma
+        if (!agent.hasPath || agent.remainingDistance < 0.5f)
         {
-            // RandomEventSystem zaten bunu yakalıyor, burada sadece anim
+            agent.isStopped = true;
+        }
+
+        if (cards.HasCard("Zeka") && memory.GetThreshold("idle_long") > 180f)
+        {
             SetState("Thinking");
         }
     }
@@ -745,9 +771,16 @@ public class MinionAI : MonoBehaviour
 
     void MoveTo(Vector3 pos)
     {
-        if(!agent.isActiveAndEnabled) return;
-        if(NavMesh.SamplePosition(pos, out NavMeshHit hit, 2f, NavMesh.AllAreas))
-            agent.SetDestination(hit.position);
+        if (!agent.isActiveAndEnabled) return;
+
+        agent.isStopped = false; // Kilidi aç
+
+        // Hedef değişmediyse ve zaten bir yoldaysak, tekrar SetDestination ÇAĞIRMA (Kekemeliği önler)
+        if (!agent.hasPath || Vector3.Distance(agent.destination, pos) > 1.5f)
+        {
+            if (NavMesh.SamplePosition(pos, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+                agent.SetDestination(hit.position);
+        }
     }
 
     bool HasShelter()

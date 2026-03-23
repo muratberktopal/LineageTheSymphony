@@ -5233,7 +5233,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DemoSceneSetup
   minionPrefab: {fileID: 0}
-  treePrefab: {fileID: 0}
+  treePrefab: {fileID: 6078007378865225339, guid: 6b7c749a06e139c44abfe839791eb182, type: 3}
   fishingSpotPrefab: {fileID: 0}
   shelterPrefab: {fileID: 0}
   campfirePrefab: {fileID: 0}
