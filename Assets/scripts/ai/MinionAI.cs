@@ -102,56 +102,53 @@ public class MinionAI : MonoBehaviour
     {
         if (emotions.CanRefuseWork() && Random.value < 0.3f) { SetState("DepressedIdle"); return; }
 
-        // 1. ÖLÜM VE ACİL DURUM
         if (CheckDeath()) return;
         if (RunEmergency()) return;
 
-        // 2. TEMEL HAYATTA KALMA (KARTTAN ÖNCE)
-        // "Karnı açsa Avcı olmasa da balık tutar, evi yoksa odun kırar" mantığı
+        // 1. TEMEL HAYATTA KALMA (KARTTAN VE İŞTEN ÖNCE)
         if (RunBasicSurvival()) return;
 
-        // 3. KART DAVRANIŞLARI (Mesleki Uzmanlık)
-        // Karnı toksa, köyün odunu/yemeği fena değilse artık kartına göre davranır
+        // 2. KART DAVRANIŞLARI (Meslekler - Karın tok, ev bark tamamsa)
         if (RunCardBehaviors()) return;
 
-        // 4. GECE VE SOSYAL (İş yoksa sosyalleşir veya uyur)
+        // 3. GECE VE SOSYAL
         if (RunEmotionalReactions()) return;
         if (RunNightRoutine()) return;
         if (RunSocialNeeds()) return;
 
-        // 5. DEFAULT (Tamamen boşta kalırsa)
+        // 4. BOŞTA
         RunDefault();
     }
 
     bool RunBasicSurvival()
     {
-        // 1. Kendi karnı çok açsa (her şeyden önemli)
+        // 1. Kendi karnı çok açsa her şeyi bırakır
         if (needs.hunger > 50f)
         {
             if (GoFish()) return true;
         }
 
-        // 2. Köyde yiyecek bitiyorsa (Dayanışma)
+        // 2. Evi yoksa (Avcı da olsa ev dikecek veya odun kesecek)
+        if (!HasShelter())
+        {
+            if (ResourceManager.Instance.woodCount >= 10f)
+            {
+                if (Build()) return true; // Odun varsa ev yap
+            }
+            else
+            {
+                if (ChopWood()) return true; // Odun yoksa odun kes
+            }
+        }
+
+        // 3. Köyde yemek bitiyorsa dayanışma
         if (ResourceManager.Instance.foodCount < 10f)
         {
             if (GoFish()) return true;
         }
 
-        // 3. Evi yoksa
-        if (!HasShelter())
-        {
-            if (ResourceManager.Instance.woodCount >= 10f)
-            {
-                if (Build()) return true; // Malzeme varsa yap
-            }
-            else
-            {
-                if (ChopWood()) return true; // Malzeme yoksa zorunlu odun kır
-            }
-        }
-
-        // 4. Köyde odun bitiyorsa (Ateş ve ev için lazım)
-        if (ResourceManager.Instance.woodCount < 10f)
+        // 4. Köyde odun bitiyorsa dayanışma
+        if (ResourceManager.Instance.woodCount < 5f)
         {
             if (ChopWood()) return true;
         }
