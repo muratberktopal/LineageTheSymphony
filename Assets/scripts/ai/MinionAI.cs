@@ -98,6 +98,7 @@ public class MinionAI : MonoBehaviour
     }
 
     // ── BEHAVIOUR TREE ────────────────────────────────────
+    // ── BEHAVIOUR TREE ────────────────────────────────────
     void RunBehaviourTree()
     {
         if (emotions.CanRefuseWork() && Random.value < 0.3f)
@@ -107,38 +108,39 @@ public class MinionAI : MonoBehaviour
             return;
         }
 
-        // 1. ÖLÜM VE ACİL DURUM (Her zaman mevcut işi böler)
+        // 1. ÖLÜM VE ACİL DURUM
         if (CheckDeath()) return;
         if (RunEmergency())
         {
-            ClearCurrentTask(); // Acil durumda elindeki işi bırak
+            ClearCurrentTask();
             return;
         }
 
-        // 2. TEMEL HAYATTA KALMA (Kendi karnı açsa vs.)
-        // Eğer çok açsa ve şu an balık tutmuyorsa, işi bırakıp balığa gitsin
-        if (needs.hunger > 50f && currentState != "Fishing" && currentState != "Eating")
+        // 2. TEMEL HAYATTA KALMA (Yemek Yeme Mekaniği Eklendi)
+        if (RunBasicSurvival()) return;
+
+        // 3. ÜREME ÖNCELİĞİ (Oyun başı çoğalmayı garanti eder!)
+        // Eğer üremeye hazırsa, her şeyi bırakıp eşine koşar.
+        if (CanMate())
         {
             ClearCurrentTask();
-            if (GoFish()) return;
+            if (TryMate()) return;
         }
 
-        // --- GÖREV ODAKLANMASI (TASK COMMITMENT) ---
-        // Eğer minyon zaten bir iş yapıyorsa (hedefi varsa) fikrini 2 saniyede bir değiştirme!
+        // 4. GÖREV ODAKLANMASI (İş yapıyorsa bozma)
         if (currentTarget != null && IsWorkingState(currentState))
         {
             ContinueCurrentTask();
-            return; // Başka bir şey düşünme, işine devam et
+            return;
         }
 
-        // 3. EĞER BOŞTAYSA VEYA İŞİ BİTTİYSE YENİ KARAR AL
-        if (RunBasicSurvival()) return;
+        // 5. YENİ İŞ BULMA VEYA KART DAVRANIŞLARI
         if (RunCardBehaviors()) return;
         if (RunEmotionalReactions()) return;
         if (RunNightRoutine()) return;
         if (RunSocialNeeds()) return;
 
-        // 4. HİÇBİR ŞEY YOKSA DEFAULT
+        // 6. DEFAULT (Hiçbir şey yoksa yapılacaklar)
         RunDefault();
     }
 
@@ -161,35 +163,29 @@ public class MinionAI : MonoBehaviour
 
     bool RunBasicSurvival()
     {
-        // 1. Kendi karnı çok açsa her şeyi bırakır
-        if (needs.hunger > 50f)
+        // 1. Kendi karnı açsa
+        if (needs.hunger > 40f)
         {
-            if (GoFish()) return true;
-        }
-
-        // 2. Evi yoksa (Avcı da olsa ev dikecek veya odun kesecek)
-        if (!HasShelter())
-        {
-            if (ResourceManager.Instance.woodCount >= 10f)
+            // Köyde yemek varsa hemen ye ve rahatla (Sürekli balık tutmayı engeller)
+            if (ResourceManager.Instance.foodCount >= 2f)
             {
-                if (Build()) return true; // Odun varsa ev yap
+                ResourceManager.Instance.Spend("food", 2f);
+                needs.Change("hunger", -40f); // Karnı doydu
+                // İşe devam etmesi için return true DEMİYORUZ.
             }
-            else
+            // Köyde yemek yoksa ve zaten balık tutmuyorsa, acilen balığa git
+            else if (currentState != "Fishing")
             {
-                if (ChopWood()) return true; // Odun yoksa odun kes
+                ClearCurrentTask();
+                if (GoFish()) return true;
             }
         }
 
-        // 3. Köyde yemek bitiyorsa dayanışma
-        if (ResourceManager.Instance.foodCount < 10f)
+        // 2. Köyün yiyecek stoğu alarm veriyorsa (Dayanışma)
+        if (ResourceManager.Instance.foodCount < 10f && currentState != "Fishing")
         {
+            ClearCurrentTask();
             if (GoFish()) return true;
-        }
-
-        // 4. Köyde odun bitiyorsa dayanışma
-        if (ResourceManager.Instance.woodCount < 5f)
-        {
-            if (ChopWood()) return true;
         }
 
         return false;
@@ -448,12 +444,6 @@ public class MinionAI : MonoBehaviour
             return true;
         }
 
-        // Üreme zamanı
-        if(CanMate())
-        {
-            TryMate();
-            return true;
-        }
 
         return false;
     }
@@ -757,28 +747,24 @@ public class MinionAI : MonoBehaviour
     // ── 7. DEFAULT ────────────────────────────────────────
     void RunDefault()
     {
-        // Odun
-        if(ResourceManager.Instance.woodCount < 20f)
-        {
-            var tree = FindNearest("Tree");
-            if(tree != null) { ChopWood(); return; }
-        }
-
-        // Yiyecek
-        if(ResourceManager.Instance.foodCount < 10f)
-        {
-            var spot = FindNearest("FishingSpot");
-            if(spot != null) { GoFish(); return; }
-        }
-
-        // Barınak yok
-        if(!HasShelter() && ResourceManager.Instance.woodCount >= 10f)
+        // 1. Barınak yok ve yeterli odun var -> İnşaat (Öncelik)
+        if (!HasShelter() && ResourceManager.Instance.woodCount >= 10f)
         {
             var site = FindNearest("BuildSite");
-            if(site != null) { Build(); return; }
+            if (site != null) { Build(); return; }
         }
 
-        // Boşta
+        // 2. Yiyecek stoğu çok iyi değilse (Örn: 20'nin altıysa)
+        if (ResourceManager.Instance.foodCount < 20f)
+        {
+            var spot = FindNearest("FishingSpot");
+            if (spot != null) { GoFish(); return; }
+        }
+
+        // 3. Hiçbiri yoksa -> SÜREKLİ ODUN KES (Karakterlerin boş kalmasını tamamen çözer)
+        var tree = FindNearest("Tree");
+        if (tree != null) { ChopWood(); return; }
+
         Idle();
     }
 
@@ -860,7 +846,7 @@ public class MinionAI : MonoBehaviour
     {
         if (!agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
 
-        agent.isStopped = false; // Freni mutlaka bırak
+        agent.isStopped = false; // Freni mutlaka bırak runsocial
 
         // Hedef nokta 1 birimden fazla değişmediyse, ROTA HESAPLAMASINI TEKRARLAMA!
         if (Vector3.Distance(lastMoveTarget, pos) > 1f)
