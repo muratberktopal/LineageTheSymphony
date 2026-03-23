@@ -39,6 +39,7 @@ public class MinionFeedback : MonoBehaviour
 
     public void ShowText(string text, Color color)
     {
+        Debug.Log("Kafada yazý çýkmalý: " + text);
         statusText.gameObject.SetActive(true);
         emojiImage.gameObject.SetActive(true);
         timer = displayDuration; // Sayacý sýfýrla ki hemen kapanmasýn
