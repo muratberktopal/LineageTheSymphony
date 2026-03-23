@@ -184,11 +184,15 @@ public class RandomEventSystem : MonoBehaviour
                 cascade.TriggerCascade(o.parameter, ai.stats.name, o.value); break;
 
             case EventOutcome.OutcomeType.ShowNotification:
+
                 string msg = o.notificationMessage
                     .Replace("{name}",ai.stats.name)
                     .Replace("{target}",FindNearest()?.stats.name ?? "biri")
                     .Replace("{spouse}",ai.stats.spouse?.stats.name ?? "")
                     .Replace("{rival}",FindNearestEnemy()?.stats.name ?? "rakip");
+
+                var fb = GetComponentInChildren<MinionFeedback>();
+                if (fb != null) fb.ShowText("!", Color.red);
                 NotificationManager.Instance.Show(msg, o.notificationType); break;
 
             case EventOutcome.OutcomeType.StealFrom:

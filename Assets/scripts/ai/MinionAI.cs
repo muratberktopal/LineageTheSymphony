@@ -25,7 +25,7 @@ public class MinionAI : MonoBehaviour
     public string currentState = "Idle";
     public string lastState = "Idle";
     public MinionAI currentAttacker = null;
-
+    public GameObject shelterPrefab;
     // Bileşenler
     NavMeshAgent agent;
     NeedsSystem needs;
@@ -38,7 +38,7 @@ public class MinionAI : MonoBehaviour
     // Behaviour tree tick hızı
     float btTimer = 0f;
     const float BT_TICK = 2.0f; // 2 saniyede bir karar verir (Performans ve kararlılık için ideal)
-
+    private static Dictionary<GameObject, int> houseOccupancy = new Dictionary<GameObject, int>();
     // Hedefler
     GameObject currentTarget;
     Vector3 wanderTarget;
@@ -70,6 +70,17 @@ public class MinionAI : MonoBehaviour
 
     void Update()
     {
+        if (!TimeManager.Instance.isNight && minionRenderer != null && !minionRenderer.enabled)
+        {
+            minionRenderer.enabled = true; // Geri görünür ol
+
+            // Eğer bir evin içindeysek o evi boşaltalım (Kapasiteyi düşür)
+            var myHome = FindNearest("Shelter");
+            if (myHome != null && houseOccupancy.ContainsKey(myHome) && houseOccupancy[myHome] > 0)
+            {
+                houseOccupancy[myHome]--;
+            }
+        }
         if (!stats.isAlive) return;
 
         lastState = currentState;
@@ -86,50 +97,115 @@ public class MinionAI : MonoBehaviour
     // ── 0. BEHAVIOUR TREE (KARAR AĞACI HİYERARŞİSİ) ─────────
     void RunBehaviourTree()
     {
-        if (emotions.CanRefuseWork() && Random.value < 0.3f) { SetState("DepressedIdle"); return; }
-
+        // 1. ÖLÜM VE KRİTİK İHTİYAÇLAR (Her zaman en üstte)
         if (CheckDeath()) return;
-        if (RunEmergency()) return;
+        if (RunEmergency()) { ClearCurrentTask(); return; }
 
-        // DÜZELTME 1: GÖREV KİLİDİ (ADHD / TİTREME ÇÖZÜMÜ)
-        // Adam bir işe başladıysa ve acil bir durum yoksa zırt pırt işi bırakmaz.
-        if (ContinueCurrentTask()) return;
+        // 2. SOSYAL VE DUYGUSAL DURUM (Eğer çok mutsuzsa veya yalnızsa işi reddetsin)
+        if (emotions.CanRefuseWork() && Random.value < 0.3f) { ClearCurrentTask(); SetState("DepressedIdle"); return; }
 
-        // DÜZELTME 2: TEMEL HAYATTA KALMA (KARTLARDAN ÖNCE GELİR)
+        // 3. ÜREME VE SOSYALLEŞME (Eğer üreme vakti geldiyse veya çok yalnızsa işi bırakıp birine gitsin)
+        if (CanMate()) { ClearCurrentTask(); if (TryMate()) return; }
+        if (needs.loneliness > 70f || needs.boredom > 75f) { ClearCurrentTask(); if (RunSocialNeeds()) return; }
+
+        // 4. GÖREV ODAKLANMASI (Eğer bir işe başladıysan ve yukarıdaki krizler yoksa işi bitir)
+        if (currentTarget != null && IsWorkingState(currentState))
+        {
+            ContinueCurrentTask();
+            return;
+        }
+
+        // 5. TEMEL HAYATTA KALMA VE İŞLER
         if (RunBasicSurvival()) return;
-
-        // EĞER KARNI TOK VE EVİ VARSA, ARTIK KENDİ HAYATINI YAŞAYABİLİR:
         if (RunCardBehaviors()) return;
-        if (RunEmotionalReactions()) return;
         if (RunNightRoutine()) return;
-        if (RunSocialNeeds()) return;
 
+        // 6. HİÇBİR ŞEY YOKSA
         RunDefault();
     }
 
     // ── YENİ: GÖREV KİLİDİ ──────────────────────────────────
-    bool ContinueCurrentTask()
+    void ContinueCurrentTask()
     {
-        if (needs.hunger > 50f) return false; // Karnı çok açsa her şeyi bırakır
-
-        if (currentState == "Fishing" && ResourceManager.Instance.foodCount < ResourceManager.Instance.maxFood * 0.4f)
+        if (currentTarget == null || !currentTarget.activeInHierarchy)
         {
-            GoFish(); return true;
+            ClearCurrentTask();
+            SetState("Idle");
+            return;
         }
 
-        if (currentState == "ChoppingWood" && ResourceManager.Instance.woodCount < ResourceManager.Instance.maxWood * 0.4f)
+        // İNŞAAT ÖZEL KONTROLÜ: Odun bittiyse inşaatı bırakıp oduna gitmesi lazım
+        if (currentState == "Building" && ResourceManager.Instance.woodCount < 10f)
         {
-            ChopWood(); return true;
+            ClearCurrentTask();
+            return;
         }
 
-        if (currentState == "Building" && !HasShelter())
-        {
-            Build(); return true;
-        }
+        float dist = GetDistance2D(transform.position, currentTarget.transform.position);
 
-        return false;
+        if (dist > 3f)
+        {
+            MoveTo(currentTarget.transform.position);
+        }
+        else
+        {
+            agent.isStopped = true;
+            ExecuteWorkLogic(); // Mevcut işi yap (Odun kes, balık tut veya ev yap)
+        }
+    }
+    bool IsWorkingState(string state)
+    {
+        return state == "ChoppingWood" || state == "Fishing" || state == "Building";
     }
 
+    // Hata CS0103: 'ExecuteWorkLogic' çözümüdür
+    void ExecuteWorkLogic()
+    {
+        if (currentState == "ChoppingWood")
+        {
+            float amount = stats.workSpeed;
+            if (cards.HasCard("Sinir") && emotions.GetI("Angry") > 0.5f) amount *= 1.5f;
+            ResourceManager.Instance.Add("wood", amount * Time.deltaTime * 2f);
+        }
+        else if (currentState == "Fishing")
+        {
+            float chance = InventionManager.Instance.IsDiscovered("FishingNet") ? 0.8f : 0.5f;
+            if (Random.value < (chance * Time.deltaTime))
+            {
+                ResourceManager.Instance.Add("food", 2f);
+                needs.Change("hunger", -5f);
+            }
+        }
+        else if (currentState == "Building")
+        {
+            FinishBuilding(); // Bu metodu aşağıda tanımladık
+        }
+    }
+    void FinishBuilding()
+    {
+        var site = currentTarget; // Mevcut hedefimiz inşaat alanı
+        if (site == null) return;
+
+        stats.buildingsConstructed++;
+        ResourceManager.Instance.Spend("wood", 10f);
+
+        // İnşaat küpünün yerine gerçek ev prefabını koy
+        if (shelterPrefab != null)
+        {
+            GameObject realHome = Instantiate(shelterPrefab, site.transform.position, site.transform.rotation);
+            realHome.tag = "Shelter";
+            realHome.name = "Shelter_" + stats.name;
+        }
+
+        // Küpü (BuildSite) yok et
+        Destroy(site);
+
+        NotificationManager.Instance.Show(stats.name + " bir ev inşa etti!", NotificationType.Social);
+
+        // İş bitti, hedefi temizle
+        ClearCurrentTask();
+        SetState("Idle");
+    }
     // ── YENİ: TEMEL HAYATTA KALMA MANTIĞI ───────────────────
     bool RunBasicSurvival()
     {
@@ -283,19 +359,30 @@ public class MinionAI : MonoBehaviour
         SetState("Building");
         MoveTo(site.transform.position);
 
+        // 2D mesafe kontrolü (Ağaç boyu/Ev boyu bug'ına girmemesi için)
         if (GetDistance2D(transform.position, site.transform.position) < 4.5f)
         {
             stats.buildingsConstructed++;
-            ResourceManager.Instance.Spend("wood", 10f);
+            ResourceManager.Instance.Spend("wood", 10f); // 10 Odun harca
 
-            // DÜZELTME 5: Sonsuz İnşaat Bug'ı Çözümü
-            site.tag = "Shelter";
-            site.name = "Shelter_" + stats.name;
+            // --- PREFAB SPAWN ETME ---
+            if (shelterPrefab != null)
+            {
+                // İnşaat küpünün tam yerine yeni evi dikiyoruz
+                GameObject realHome = Instantiate(shelterPrefab, site.transform.position, site.transform.rotation);
 
-            var renderer = site.GetComponent<Renderer>();
-            if (renderer != null) renderer.material.color = new Color(0.6f, 0.3f, 0.2f);
+                // Yeni objenin Tag'ini "Shelter" yapıyoruz ki HasShelter() onu bulabilsin
+                realHome.tag = "Shelter";
+                realHome.name = "Shelter_" + stats.name;
+            }
 
-            NotificationManager.Instance.Show(stats.name + " bir yapı tamamladı!", NotificationType.Social);
+            // İnşaat bittiğine göre o geçici küpü (BuildSite) yok et
+            Destroy(site);
+
+            NotificationManager.Instance.Show(stats.name + " bir ev inşa etti!", NotificationType.Social);
+
+            // Görevi temizle ki minyon orada mal gibi dikilmesin
+            ClearCurrentTask();
         }
         return true;
     }
@@ -419,8 +506,34 @@ public class MinionAI : MonoBehaviour
     void GoHomeAndSleep()
     {
         SetState("Sleeping");
-        var home = FindNearest("Shelter");
-        if (home != null) MoveTo(home.transform.position);
+        var shelters = GameObject.FindGameObjectsWithTag("Shelter");
+        GameObject targetHome = null;
+
+        // En yakın ve müsait (en fazla 2 kişi) evi bul
+        foreach (var s in shelters)
+        {
+            if (!houseOccupancy.ContainsKey(s)) houseOccupancy[s] = 0;
+
+            if (houseOccupancy[s] < 2) // Kapasite kontrolü (Max 2)
+            {
+                targetHome = s;
+                break;
+            }
+        }
+
+        if (targetHome != null)
+        {
+            MoveTo(targetHome.transform.position);
+            if (GetDistance2D(transform.position, targetHome.transform.position) < 1.5f)
+            {
+                agent.isStopped = true;
+                if (minionRenderer != null && minionRenderer.enabled)
+                {
+                    minionRenderer.enabled = false; // İçeri girdi, gizle
+                    houseOccupancy[targetHome]++; // Evdeki sayıyı artır
+                }
+            }
+        }
     }
 
     void SleepOutside()
@@ -516,13 +629,28 @@ public class MinionAI : MonoBehaviour
     void UpdateColor()
     {
         if (minionRenderer == null || !stats.isAlive) return;
+
         Color c = baseColor;
+
+        // --- YENİ: SAĞLIK VE HASTALIK GERİ BİLDİRİMİ ---
+        if (stats.isSick)
+        {
+            c = Color.green; // Zehirlenince yeşil olsun
+        }
+        else if (stats.health < 30f)
+        {
+            c = Color.black; // Ölmek üzereyken kararsın
+        }
+        // ----------------------------------------------
+
+        // Mevcut duygu renkleri (Üzerine ekler)
         switch (emotions.Dominant())
         {
             case "Angry": c = Color.Lerp(c, Color.red, emotions.GetI("Angry") * 0.4f); break;
-            case "Sad": c = Color.Lerp(c, Color.blue, emotions.GetI("Sad") * 0.3f); break;
             case "Happy": c = Color.Lerp(c, Color.yellow, emotions.GetI("Happy") * 0.2f); break;
+            case "Terrified": c = Color.white; break;
         }
+
         minionRenderer.material.color = c;
     }
 
@@ -536,7 +664,13 @@ public class MinionAI : MonoBehaviour
     // ── FİZİKSEL YARDIMCILAR (KUSURSUZ HAREKET SİSTEMİ) ─────
     void SetState(string newState)
     {
-        if (currentState != newState) stateTimer = 0f;
+        if (currentState != newState)
+        {
+            stateTimer = 0f;
+            // YENİ: Durum değişince kafada yazı çıksın
+            var feedback = GetComponentInChildren<MinionFeedback>();
+            if (feedback != null) feedback.ShowText(newState, Color.white);
+        }
         currentState = newState;
         if (agent.isActiveAndEnabled) agent.isStopped = false;
     }
@@ -602,7 +736,10 @@ public class MinionAI : MonoBehaviour
         }
         return best;
     }
-
+    void ClearCurrentTask()
+    {
+        currentTarget = null; // Mevcut hedefi sıfırlar, AI'nın kafasını boşaltır
+    }
     MinionAI FindNearestEnemy()
     {
         foreach (var e in stats.enemies) if (e != null && e.stats.isAlive) return e;

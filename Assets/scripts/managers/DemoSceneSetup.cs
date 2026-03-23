@@ -8,7 +8,7 @@ using UnityEngine.AI;
 // Play'e basınca sahneyi otomatik kurar:
 //   - Düz zemin (NavMesh)
 //   - Ağaç ve Balık noktaları
-//   - 2 Minyon (Ahmet + Ayşe)
+//   - 6 Minyon (4 Erkek, 2 Kadın)
 //   - Tüm Manager'lar
 // ============================================================
 public class DemoSceneSetup : MonoBehaviour
@@ -43,27 +43,31 @@ public class DemoSceneSetup : MonoBehaviour
         else
             BuildPrefabScene();
 
-        // 1. KAYNAKLARI GÜÇLÜ BAŞLAT (Balığa gitmeyi erteler, inşaata teşvik eder)
-        ResourceManager.Instance.woodCount = 20f; // Ev inşaatını tetikleyecek miktar
-        ResourceManager.Instance.foodCount = 60f; // Tok tutar, balık tutmayı geciktirir
-        ResourceManager.Instance.waterCount = 50f;
+        // 1. KAYNAKLARI GÜÇLÜ BAŞLAT (6 kişi oldukları için biraz artırdık)
+        ResourceManager.Instance.woodCount = 50f; // Ev inşaatını hızlıca tetikler
+        ResourceManager.Instance.foodCount = 100f; // Açlıktan ölmelerini engeller
+        ResourceManager.Instance.waterCount = 80f;
 
-        // 2. AHMET VE AYŞE'YE MÜDAHALE ET
+        // 2. AHMET VE AYŞE'NİN ÖZEL DURUMU & GENEL MUTLULUK
         MinionAI ahmet = GenerationManager.Instance.allMinyons.Find(m => m.stats.name == "Ahmet");
         MinionAI ayse = GenerationManager.Instance.allMinyons.Find(m => m.stats.name == "Ayşe");
 
-        if (ahmet != null && ayse != null)
+        if (ahmet != null)
         {
             // Ahmet'i anında lider yap
             PowerSystem.Instance.SetLeader(ahmet);
+        }
 
-            // İlişkilerini yüksek başlat (Hemen üremeye hazır olsunlar)
-            ahmet.GetComponent<SocialNetwork>().relationships[ayse.stats.name] = 75f;
-            ayse.GetComponent<SocialNetwork>().relationships[ahmet.stats.name] = 75f;
+        // Tüm minyonları oyuna mutlu başlatalım
+        foreach (var minion in GenerationManager.Instance.allMinyons)
+        {
+            minion.GetComponent<EmotionSystem>().SetEmotion("Happy", 0.8f);
 
-            // Mutlu başlasınlar (Depresyonu engeller)
-            ahmet.GetComponent<EmotionSystem>().SetEmotion("Happy", 0.8f);
-            ayse.GetComponent<EmotionSystem>().SetEmotion("Happy", 0.8f);
+            // Ahmet ve Ayşe'yi yine de çift yapalım ki hemen nesil üremeye başlasın
+            if (minion.stats.name == "Ahmet" && ayse != null)
+                minion.GetComponent<SocialNetwork>().relationships[ayse.stats.name] = 75f;
+            else if (minion.stats.name == "Ayşe" && ahmet != null)
+                minion.GetComponent<SocialNetwork>().relationships[ahmet.stats.name] = 75f;
         }
     }
 
@@ -76,32 +80,26 @@ public class DemoSceneSetup : MonoBehaviour
         ground.transform.localScale = new Vector3(3f, 1f, 3f);
         ground.GetComponent<Renderer>().material.color = new Color(0.4f, 0.6f, 0.3f);
 
-        // NavMesh Surface — Runtime NavMesh gerekiyor
-        // Eğer Unity NavMesh Surface bileşeni yüklüyse ekle
-        // var surface = ground.AddComponent<NavMeshSurface>();
-        // surface.BuildNavMesh();
-
-        
-
-        // Minyonları oluştur
-        SpawnMinyon("Ahmet", false, new Vector3(-2f, 0f, -2f), new[]{"Sinir","Oduncu"});
-        SpawnMinyon("Ayşe",  true,  new Vector3(2f,  0f, -2f), new[]{"Sosyal","Avcı"});
+        SpawnAllMinions();
     }
 
     void BuildPrefabScene()
     {
-        // ŞU KISIMLARI YORUM SATIRI YAP VEYA SİL:
-        /*
-        if(treePrefab != null)
-            for(int i = 0; i < 6; i++) ...
+        SpawnAllMinions();
+    }
 
-        if(fishingSpotPrefab != null)
-            for(int i = 0; i < 2; i++) ...
-        */
-
-        // Minyonları oluştur (BU KALSIN)
+    // ── 6 MİNYONU SPAWN ETME MERKEZİ ─────────────────────
+    void SpawnAllMinions()
+    {
+        // ERKEKLER (4 Kişi)
         SpawnMinyon("Ahmet", false, new Vector3(-2f, 0f, -2f), new[] { "Sinir", "Oduncu" });
+        SpawnMinyon("Mehmet", false, new Vector3(-4f, 0f, 0f), new[] { "Zeka", "İnşaatçı" });
+        SpawnMinyon("Ali", false, new Vector3(-2f, 0f, 2f), new[] { "Tembel", "Maceracı" });
+        SpawnMinyon("Veli", false, new Vector3(0f, 0f, -4f), new[] { "Hızlı", "Avcı" });
+
+        // KADINLAR (2 Kişi)
         SpawnMinyon("Ayşe", true, new Vector3(2f, 0f, -2f), new[] { "Sosyal", "Avcı" });
+        SpawnMinyon("Fatma", true, new Vector3(4f, 0f, 0f), new[] { "Şüpheci", "Şaman" });
     }
 
     // ── MİNYON SPAWN ─────────────────────────────────────
@@ -109,10 +107,11 @@ public class DemoSceneSetup : MonoBehaviour
     {
         GameObject go;
 
-        if(minionPrefab != null)
+        if (minionPrefab != null)
         {
             go = Instantiate(minionPrefab, pos, Quaternion.identity);
         }
+
         else
         {
             // Prefab yoksa primitiv + gerekli componentler
@@ -120,18 +119,23 @@ public class DemoSceneSetup : MonoBehaviour
             go.transform.position = pos;
             AddComponents(go);
         }
+        
 
-        go.name = name;
+        
 
         var ai = go.GetComponent<MinionAI>();
         ai.stats.Initialize(1, female, name);
 
+        // YENİ: DemoScene içindeki prefabı minyona aktar
+        ai.shelterPrefab = this.shelterPrefab;
+        go.name = name;
+
         var cs = go.GetComponent<CardSystem>();
-        foreach(var card in cardList) cs.AddCard(card);
+        foreach (var card in cardList) cs.AddCard(card);
 
         // Renk — kadın/erkek farkı
         var r = go.GetComponentInChildren<Renderer>();
-        if(r != null)
+        if (r != null)
             r.material.color = female
                 ? new Color(0.9f, 0.7f, 0.8f)
                 : new Color(0.7f, 0.8f, 0.9f);
@@ -145,21 +149,21 @@ public class DemoSceneSetup : MonoBehaviour
     void AddComponents(GameObject go)
     {
         // Sadece prefab yoksa elle ekle
-        if(!go.GetComponent<NavMeshAgent>())          go.AddComponent<NavMeshAgent>();
-        if(!go.GetComponent<MinionAI>())              go.AddComponent<MinionAI>();
-        if(!go.GetComponent<NeedsSystem>())           go.AddComponent<NeedsSystem>();
-        if(!go.GetComponent<EmotionSystem>())         go.AddComponent<EmotionSystem>();
-        if(!go.GetComponent<MemorySystem>())          go.AddComponent<MemorySystem>();
-        if(!go.GetComponent<CardSystem>())            go.AddComponent<CardSystem>();
-        if(!go.GetComponent<SocialNetwork>())         go.AddComponent<SocialNetwork>();
-        if(!go.GetComponent<CascadeSystem>())         go.AddComponent<CascadeSystem>();
-        if(!go.GetComponent<RandomEventSystem>())     go.AddComponent<RandomEventSystem>();
+        if (!go.GetComponent<NavMeshAgent>()) go.AddComponent<NavMeshAgent>();
+        if (!go.GetComponent<MinionAI>()) go.AddComponent<MinionAI>();
+        if (!go.GetComponent<NeedsSystem>()) go.AddComponent<NeedsSystem>();
+        if (!go.GetComponent<EmotionSystem>()) go.AddComponent<EmotionSystem>();
+        if (!go.GetComponent<MemorySystem>()) go.AddComponent<MemorySystem>();
+        if (!go.GetComponent<CardSystem>()) go.AddComponent<CardSystem>();
+        if (!go.GetComponent<SocialNetwork>()) go.AddComponent<SocialNetwork>();
+        if (!go.GetComponent<CascadeSystem>()) go.AddComponent<CascadeSystem>();
+        if (!go.GetComponent<RandomEventSystem>()) go.AddComponent<RandomEventSystem>();
     }
 
     T EnsureManager<T>(string goName) where T : MonoBehaviour
     {
         var existing = FindFirstObjectByType<T>();
-        if(existing != null) return existing;
+        if (existing != null) return existing;
 
         var go = new GameObject(goName);
         return go.AddComponent<T>();

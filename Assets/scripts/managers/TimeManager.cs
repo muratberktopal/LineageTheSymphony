@@ -30,19 +30,17 @@ public class TimeManager : MonoBehaviour
 
     void Update()
     {
-        // --- DEBUG: KLAVYE KISAYOLLARI ---
+        if (Input.GetKeyDown(KeyCode.Alpha0)) SetSpeed(0); // Pause
         if (Input.GetKeyDown(KeyCode.Alpha1)) SetSpeed(1); // Normal Hız
         if (Input.GetKeyDown(KeyCode.Alpha2)) SetSpeed(2); // 2x Hız
         if (Input.GetKeyDown(KeyCode.Alpha3)) SetSpeed(4); // 4x Hız
-        if (Input.GetKeyDown(KeyCode.Alpha4)) SetSpeed(8); // 8x Hız
-        if (Input.GetKeyDown(KeyCode.Space)) SetSpeed(Time.timeScale == 0 ? 1 : 0); // Durdur / Devam et
+        if (Input.GetKeyDown(KeyCode.Alpha4)) SetSpeed(8); // 8x Hız (Zaman makinesi)
 
-        // --- ORİJİNAL ZAMAN AKIŞI ---
-        // timeScale yerine Time.timeScale kullanmıyoruz çünkü Update zaten Time.timeScale'den etkilenen Time.deltaTime ile çalışıyor.
-        // O yüzden formülü normal deltaTime ile sadeleştirdik.
-        currentTime += Time.deltaTime / dayDuration;
+        // Aşağısı senin mevcut zaman akış kodların...
+        currentTime += (Time.deltaTime * timeScale) / dayDuration;
 
-        if (currentTime >= 1f)
+
+            if (currentTime >= 1f)
         {
             currentTime -= 1f;
             totalDays++;
@@ -65,17 +63,17 @@ public class TimeManager : MonoBehaviour
     // Oyuncu veya Debugger hız kontrolü
     public void SetSpeed(int speed)
     {
-        // Time.timeScale Unity'nin fizik, NavMeshAgent ve Invoke sürelerini otomatik hızlandırır.
+        // Kendi custom değişkenimizi 1'de tutuyoruz ki günler "çifte hızlanma" bug'ına girmesin.
+        timeScale = 1f;
+
         switch (speed)
         {
-            case 0: Time.timeScale = 0f; timeScale = 0f; break;
-            case 1: Time.timeScale = 1f; timeScale = 1f; break;
-            case 2: Time.timeScale = 2f; timeScale = 2f; break; // Düzeltildi!
-            case 4: Time.timeScale = 4f; timeScale = 4f; break; // Düzeltildi!
-            case 8: Time.timeScale = 8f; timeScale = 8f; break; // Düzeltildi!
+            case 0: Time.timeScale = 0f; break; // Oyun Durduruldu (Pause)
+            case 1: Time.timeScale = 1f; break; // Normal Hız
+            case 2: Time.timeScale = 2f; break; // 2x Hız (Her şey iki kat hızlı)
+            case 4: Time.timeScale = 4f; break; // 4x Hız
+            case 8: Time.timeScale = 8f; break; // 8x Hız (NavMesh bazen sapıtabilir ama çok zevklidir)
         }
-
-        Debug.Log("Oyun Hızı Değiştirildi: " + speed + "x");
     }
 
     public string SeasonName(int s)
