@@ -2218,6 +2218,7 @@ SphereCollider:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
+<<<<<<< Updated upstream
   m_GameObject: {fileID: 647717794}
   m_Material: {fileID: 0}
   m_IncludeLayers:
@@ -2411,6 +2412,13 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 13.57793, y: -0.06, z: 24.04134}
   m_LocalScale: {x: 4.795106, y: 1, z: 3.3033}
+=======
+  m_GameObject: {fileID: 624669343}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 13.21, y: 0.1, z: 23.89}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+>>>>>>> Stashed changes
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -4149,6 +4157,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 158.774, z: 0}
+<<<<<<< Updated upstream
 --- !u!1 &1539434728
 GameObject:
   m_ObjectHideFlags: 0
@@ -4261,6 +4270,8 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+=======
+>>>>>>> Stashed changes
 --- !u!1001 &1549017806
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6922,7 +6933,13 @@ SceneRoots:
   - {fileID: 1014721165}
   - {fileID: 1695195510}
   - {fileID: 1921575874}
+<<<<<<< Updated upstream
   - {fileID: 1539434732}
+=======
+  - {fileID: 624669344}
+  - {fileID: 29292161}
+  - {fileID: 131619543}
+>>>>>>> Stashed changes
   - {fileID: 2119174798}
   - {fileID: 1489997265}
   - {fileID: 407094373}
