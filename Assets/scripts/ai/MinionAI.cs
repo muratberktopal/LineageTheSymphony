@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-
 // ============================================================
 // MinionAI.cs
 // Ana minyon sınıfı — behaviour tree, hareket, iş sistemi
@@ -49,6 +48,7 @@ public class MinionAI : MonoBehaviour
 
     void Start()
     {
+
         agent    = GetComponent<NavMeshAgent>();
         needs    = GetComponent<NeedsSystem>();
         emotions = GetComponent<EmotionSystem>();
@@ -65,9 +65,22 @@ public class MinionAI : MonoBehaviour
         if(cards.HasCard("Hızlı"))
             agent.speed *= 1.5f;
 
+        Debug.Log($"[{stats.name}] Agent isOnNavMesh: {agent.isOnNavMesh}, enabled: {agent.enabled}");
+        Invoke(nameof(TestMove), 1f);
+
+
         InvokeRepeating(nameof(UpdateColor), 0f, 0.5f);
         InvokeRepeating(nameof(AgeTick),     0f, 1f);
+    
     }
+
+    void TestMove()
+    {
+        Debug.Log($"[{stats.name}] TestMove çağrıldı");
+        MoveTo(transform.position + Vector3.forward * 3f);
+    }
+
+
 
     void Update()
     {
