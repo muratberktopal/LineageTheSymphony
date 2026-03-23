@@ -22,7 +22,7 @@ GameObject:
   - component: {fileID: 3983896407924218962}
   - component: {fileID: 356786866866021991}
   - component: {fileID: 5276523588770838158}
-  - component: {fileID: 5181141286518284159}
+  - component: {fileID: -4013830668848531195}
   m_Layer: 0
   m_Name: "minyo\xE7"
   m_TagString: Untagged
@@ -331,7 +331,7 @@ MonoBehaviour:
   disrespect: 0
   injustice: 0
   stress: 0
---- !u!114 &5181141286518284159
+--- !u!114 &-4013830668848531195
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -343,13 +343,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9fbf1f4c49940a43b67eef297870af3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MinionFeedback
-  heartEmoji: {fileID: 0}
-  skullEmoji: {fileID: 0}
-  sickEmoji: {fileID: 0}
-  woodEmoji: {fileID: 0}
-  fishEmoji: {fileID: 0}
-  statusText: {fileID: 0}
-  emojiImage: {fileID: 0}
+  heartEmoji: {fileID: 21300000, guid: 41bd00d18f5cb784a9d0f243f2685d07, type: 3}
+  skullEmoji: {fileID: 21300000, guid: b498a0f614534eb4c8ae2eb865589821, type: 3}
+  sickEmoji: {fileID: 21300000, guid: fe8ae19f34017ff449887587fa0c8469, type: 3}
+  woodEmoji: {fileID: 21300000, guid: b79e8e8c970861542b2c725750d265bc, type: 3}
+  fishEmoji: {fileID: 21300000, guid: adb18da2fab77344ca09d286df8bd2a2, type: 3}
+  statusText: {fileID: 4131313248708697964}
+  emojiImage: {fileID: 5423317910339038134}
   displayDuration: 2.5
 --- !u!1001 &4282893018738312242
 PrefabInstance:
@@ -448,6 +448,28 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
+--- !u!114 &4131313248708697964 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 160646347911879518, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
+  m_PrefabInstance: {fileID: 4282893018738312242}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!114 &5423317910339038134 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8083005192173285252, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
+  m_PrefabInstance: {fileID: 4282893018738312242}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
 --- !u!224 &7659095259525804868 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5847209490827196278, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}

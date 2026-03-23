@@ -4,7 +4,6 @@ using UnityEngine.UI;
 
 public class MinionFeedback : MonoBehaviour
 {
-    [Header("Emoji Arþivi")]
     public Sprite heartEmoji;   // Aþk/Üreme için
     public Sprite skullEmoji;   // Ölüm/Tehlike için
     public Sprite sickEmoji;    // Zehirlenme için
