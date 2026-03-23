@@ -30,15 +30,25 @@ public class TimeManager : MonoBehaviour
 
     void Update()
     {
-        currentTime += (Time.deltaTime * timeScale) / dayDuration;
+        // --- DEBUG: KLAVYE KISAYOLLARI ---
+        if (Input.GetKeyDown(KeyCode.Alpha1)) SetSpeed(1); // Normal Hız
+        if (Input.GetKeyDown(KeyCode.Alpha2)) SetSpeed(2); // 2x Hız
+        if (Input.GetKeyDown(KeyCode.Alpha3)) SetSpeed(4); // 4x Hız
+        if (Input.GetKeyDown(KeyCode.Alpha4)) SetSpeed(8); // 8x Hız
+        if (Input.GetKeyDown(KeyCode.Space)) SetSpeed(Time.timeScale == 0 ? 1 : 0); // Durdur / Devam et
 
-        if(currentTime >= 1f)
+        // --- ORİJİNAL ZAMAN AKIŞI ---
+        // timeScale yerine Time.timeScale kullanmıyoruz çünkü Update zaten Time.timeScale'den etkilenen Time.deltaTime ile çalışıyor.
+        // O yüzden formülü normal deltaTime ile sadeleştirdik.
+        currentTime += Time.deltaTime / dayDuration;
+
+        if (currentTime >= 1f)
         {
             currentTime -= 1f;
             totalDays++;
             dayOfSeason++;
 
-            if(dayOfSeason >= daysPerSeason)
+            if (dayOfSeason >= daysPerSeason)
             {
                 dayOfSeason = 0;
                 currentSeason = (currentSeason + 1) % 4;
@@ -48,8 +58,24 @@ public class TimeManager : MonoBehaviour
         }
 
         // 0.25-0.75 arası gündüz, geri kalanı gece
-        isNight  = currentTime < 0.25f || currentTime > 0.75f;
+        isNight = currentTime < 0.25f || currentTime > 0.75f;
         isWinter = currentSeason == 3;
+    }
+
+    // Oyuncu veya Debugger hız kontrolü
+    public void SetSpeed(int speed)
+    {
+        // Time.timeScale Unity'nin fizik, NavMeshAgent ve Invoke sürelerini otomatik hızlandırır.
+        switch (speed)
+        {
+            case 0: Time.timeScale = 0f; timeScale = 0f; break;
+            case 1: Time.timeScale = 1f; timeScale = 1f; break;
+            case 2: Time.timeScale = 2f; timeScale = 2f; break; // Düzeltildi!
+            case 4: Time.timeScale = 4f; timeScale = 4f; break; // Düzeltildi!
+            case 8: Time.timeScale = 8f; timeScale = 8f; break; // Düzeltildi!
+        }
+
+        Debug.Log("Oyun Hızı Değiştirildi: " + speed + "x");
     }
 
     public string SeasonName(int s)
@@ -66,18 +92,6 @@ public class TimeManager : MonoBehaviour
 
     public string CurrentSeasonName() => SeasonName(currentSeason);
 
-    // Oyuncu hız kontrolü
-    public void SetSpeed(int speed)
-    {
-        switch(speed)
-        {
-            case 0: Time.timeScale = 0f; break;
-            case 1: timeScale = 1f; Time.timeScale = 1f; break;
-            case 2: timeScale = 2f; Time.timeScale = 1f; break;
-            case 4: timeScale = 4f; Time.timeScale = 1f; break;
-            case 8: timeScale = 8f; Time.timeScale = 1f; break;
-        }
-    }
 
     // 0-1 arası zaman dilimini okunabilir saate çevir
     public string GetTimeString()

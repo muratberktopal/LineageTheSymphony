@@ -74,9 +74,10 @@ public class NeedsSystem : MonoBehaviour
         else                    pain = Mathf.Max(0,   pain - 0.8f);
 
         // --- YALNIZLIK ---
-        int nearby = NearbyCount(8f);
+        // Yarıçapı 8'den 15'e çıkardık ki aynı köyde ayrı ağaçları keserken bile yalnız hissetmesinler
+        int nearby = NearbyCount(15f);
         if (nearby == 0) loneliness += cards.HasCard("Sosyal") || cards.HasCard("AşırıSosyal") ? 2f : 1.5f;
-        else             loneliness  = Mathf.Max(0, loneliness - nearby * 0.5f);
+        else loneliness = Mathf.Max(0, loneliness - nearby * 0.5f);
         if (cards.HasCard("Yansıtıcı"))
         {
             bool sameCardNearby = HasSameCardNearby();
@@ -89,10 +90,15 @@ public class NeedsSystem : MonoBehaviour
         if (cards.HasCard("Önsezili") && DangerNearby()) fear += 1.5f; // tehlikeyi önceden hisseder
 
         // --- SIKINTI ---
-        if (ai.currentState == ai.lastState) boredom += cards.HasCard("Maceracı") ? 0.5f : 0.3f;
-        else                                 boredom  = Mathf.Max(0, boredom - 2f);
+        // SADECE "Idle" (Boşta) dururken canları sıkılsın. Çalışırken sıkılmasınlar!
+        if (ai.currentState == "Idle") boredom += cards.HasCard("Maceracı") ? 0.5f : 0.3f;
+        else boredom = Mathf.Max(0, boredom - 1f); // Çalışırken can sıkıntısı geçer
+
         if (cards.HasCard("Rekabetçi") && NoRivalNearby()) boredom += 0.4f;
-        if (cards.HasCard("AşırıHevesli")) boredom = Mathf.Max(0, boredom - 0.2f); // kolay sıkılmaz
+        if (cards.HasCard("AşırıHevesli")) boredom = Mathf.Max(0, boredom - 0.2f);
+
+        // Sıkılma merakı tetikler
+        if (boredom > 60f) curiosity = Mathf.Min(100, curiosity + 0.5f);
 
         // Sıkılma merakı tetikler
         if (boredom > 60f) curiosity = Mathf.Min(100, curiosity + 0.5f);

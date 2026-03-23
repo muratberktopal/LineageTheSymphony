@@ -38,15 +38,33 @@ public class DemoSceneSetup : MonoBehaviour
 
     void Start()
     {
-        if(usePrimitives)
+        if (usePrimitives)
             BuildPrimitiveScene();
         else
             BuildPrefabScene();
 
-        // Kaynakları başlat
-        ResourceManager.Instance.woodCount  = 15f;
-        ResourceManager.Instance.foodCount  = 3f;
-        ResourceManager.Instance.waterCount = 20f;
+        // 1. KAYNAKLARI GÜÇLÜ BAŞLAT (Balığa gitmeyi erteler, inşaata teşvik eder)
+        ResourceManager.Instance.woodCount = 20f; // Ev inşaatını tetikleyecek miktar
+        ResourceManager.Instance.foodCount = 60f; // Tok tutar, balık tutmayı geciktirir
+        ResourceManager.Instance.waterCount = 50f;
+
+        // 2. AHMET VE AYŞE'YE MÜDAHALE ET
+        MinionAI ahmet = GenerationManager.Instance.allMinyons.Find(m => m.stats.name == "Ahmet");
+        MinionAI ayse = GenerationManager.Instance.allMinyons.Find(m => m.stats.name == "Ayşe");
+
+        if (ahmet != null && ayse != null)
+        {
+            // Ahmet'i anında lider yap
+            PowerSystem.Instance.SetLeader(ahmet);
+
+            // İlişkilerini yüksek başlat (Hemen üremeye hazır olsunlar)
+            ahmet.GetComponent<SocialNetwork>().relationships[ayse.stats.name] = 75f;
+            ayse.GetComponent<SocialNetwork>().relationships[ahmet.stats.name] = 75f;
+
+            // Mutlu başlasınlar (Depresyonu engeller)
+            ahmet.GetComponent<EmotionSystem>().SetEmotion("Happy", 0.8f);
+            ayse.GetComponent<EmotionSystem>().SetEmotion("Happy", 0.8f);
+        }
     }
 
     // ── PRİMİTİV SAHNE (prefab olmadan test) ─────────────

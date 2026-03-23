@@ -100,25 +100,64 @@ public class MinionAI : MonoBehaviour
     // ── BEHAVIOUR TREE ────────────────────────────────────
     void RunBehaviourTree()
     {
-        if (emotions.CanRefuseWork() && Random.value < 0.3f) { SetState("DepressedIdle"); return; }
+        if (emotions.CanRefuseWork() && Random.value < 0.3f)
+        {
+            ClearCurrentTask();
+            SetState("DepressedIdle");
+            return;
+        }
 
+        // 1. ÖLÜM VE ACİL DURUM (Her zaman mevcut işi böler)
         if (CheckDeath()) return;
-        if (RunEmergency()) return;
+        if (RunEmergency())
+        {
+            ClearCurrentTask(); // Acil durumda elindeki işi bırak
+            return;
+        }
 
-        // 1. TEMEL HAYATTA KALMA (KARTTAN VE İŞTEN ÖNCE)
+        // 2. TEMEL HAYATTA KALMA (Kendi karnı açsa vs.)
+        // Eğer çok açsa ve şu an balık tutmuyorsa, işi bırakıp balığa gitsin
+        if (needs.hunger > 50f && currentState != "Fishing" && currentState != "Eating")
+        {
+            ClearCurrentTask();
+            if (GoFish()) return;
+        }
+
+        // --- GÖREV ODAKLANMASI (TASK COMMITMENT) ---
+        // Eğer minyon zaten bir iş yapıyorsa (hedefi varsa) fikrini 2 saniyede bir değiştirme!
+        if (currentTarget != null && IsWorkingState(currentState))
+        {
+            ContinueCurrentTask();
+            return; // Başka bir şey düşünme, işine devam et
+        }
+
+        // 3. EĞER BOŞTAYSA VEYA İŞİ BİTTİYSE YENİ KARAR AL
         if (RunBasicSurvival()) return;
-
-        // 2. KART DAVRANIŞLARI (Meslekler - Karın tok, ev bark tamamsa)
         if (RunCardBehaviors()) return;
-
-        // 3. GECE VE SOSYAL
         if (RunEmotionalReactions()) return;
         if (RunNightRoutine()) return;
         if (RunSocialNeeds()) return;
 
-        // 4. BOŞTA
+        // 4. HİÇBİR ŞEY YOKSA DEFAULT
         RunDefault();
     }
+
+
+    // chop Yardımcı Fonksiyonlar (MinionAI.cs içine ekle)
+    void ClearCurrentTask()
+    {
+        currentTarget = null;
+    }
+
+    bool IsWorkingState(string state)
+    {
+        return state == "ChoppingWood" || state == "Fishing" || state == "Building";
+    }
+
+
+
+
+
 
     bool RunBasicSurvival()
     {
@@ -303,7 +342,7 @@ public class MinionAI : MonoBehaviour
             cascade.TriggerCascade("Fight", target.stats.name, 0.5f);
         }
     }
-
+    //runbehaviour
     void MoveToEdge()
     {
         SetState("Isolated");
@@ -460,31 +499,49 @@ public class MinionAI : MonoBehaviour
 
     bool CanMate()
     {
-        if(stats.isMarried) return false;
-        if(stats.health < 50f) return false;
-        if(Time.time - stats.lastMatingTime < stats.matingCooldown) return false;
-        if(needs.loneliness < 40f && needs.hunger > 60f) return false;
+        // Sağlığı çok düşükse veya çok açsa üremesin, onun dışında serbest
+        if (stats.health < 40f) return false;
+        if (needs.hunger > 60f) return false;
+        if (Time.time - stats.lastMatingTime < stats.matingCooldown) return false;
         return true;
     }
 
     bool TryMate()
     {
-        foreach (var m in FindObjectsByType<MinionAI>(FindObjectsSortMode.None))
+        foreach (var m in GenerationManager.Instance.GetAlive())
         {
-            if (m == this || !m.stats.isAlive || m.stats.isFemale == stats.isFemale || m.stats.isMarried) continue;
-            if (social.GetRelationship(m.stats.name) < 55f) continue;
+            if (m == this || m.stats.isFemale == stats.isFemale) continue;
 
-            SetState("LookingForMate");
-            MoveTo(m.transform.position);
-            if (Vector3.Distance(transform.position, m.transform.position) < 2f)
+            // İlişki 55'ten büyükse (DemoScene'de 75 yaptık, hemen buraya girecekler)
+            if (social.GetRelationship(m.stats.name) >= 55f)
             {
-                stats.lastMatingTime = Time.time;
-                m.stats.lastMatingTime = Time.time;
-                if (Random.value < 0.4f) GenerationManager.Instance.TryBirth(this, m);
+                SetState("LookingForMate");
+                MoveTo(m.transform.position);
+
+                // Yan yana geldiklerinde
+                if (Vector3.Distance(transform.position, m.transform.position) < 2.5f)
+                {
+                    stats.lastMatingTime = Time.time;
+                    m.stats.lastMatingTime = Time.time;
+
+                    // Oyun başı düzeni için ilk çiftleşmede otomatik evlensinler
+                    if (!stats.isMarried && !m.stats.isMarried)
+                    {
+                        stats.isMarried = true; stats.spouse = m;
+                        m.stats.isMarried = true; m.stats.spouse = this;
+                        NotificationManager.Instance.Show($"{stats.name} ve {m.stats.name} evlendi!", NotificationType.Social);
+                    }
+
+                    // %70 gibi yüksek bir ihtimalle çocuk doğsun (Oyun başı ivmesi için)
+                    if (Random.value < 0.7f)
+                    {
+                        GenerationManager.Instance.TryBirth(this, m);
+                    }
+                }
+                return true; // Eş buldu ve peşinden gidiyor
             }
-            return true; // Eş buldu ve ilgileniyor
         }
-        return false; // Kimseyi bulamadı, pas geç
+        return false;
     }
 
     // ── 6. KART DAVRANIŞLARI ──────────────────────────────
@@ -553,54 +610,87 @@ public class MinionAI : MonoBehaviour
 
     bool ChopWood()
     {
-        var tree = FindNearest("Tree");
-        if (tree == null) return false; // Ağaç yoksa iptal, diğer işe geç
-
-        SetState("ChoppingWood");
-        MoveTo(tree.transform.position);
-        if (Vector3.Distance(transform.position, tree.transform.position) < 100.0f)
+        // Hedef yoksa yeni hedef bul ve ayarla
+        if (currentTarget == null)
         {
-            float amount = stats.workSpeed;
-            if (cards.HasCard("Sinir") && emotions.GetI("Angry") > 0.5f) amount *= 1.5f;
-            ResourceManager.Instance.Add("wood", amount * Time.deltaTime * 2f);
+            currentTarget = FindNearest("Tree");
+            if (currentTarget == null) return false;
+            SetState("ChoppingWood");
         }
-        return true;
+
+        return true; // Hedef atandı, BT döngüsünde ContinueCurrentTask ile işlenecek
     }
 
     bool GoFish()
     {
-        var spot = FindNearest("FishingSpot");
-        if (spot == null) return false;
-
-        SetState("Fishing");
-        MoveTo(spot.transform.position);
-        if (Vector3.Distance(transform.position, spot.transform.position) < 100.0f)
+        if (currentTarget == null)
         {
-            float chance = InventionManager.Instance.IsDiscovered("FishingNet") ? 0.8f : 0.5f;
-            if (Random.value < chance * Time.deltaTime)
-            {
-                ResourceManager.Instance.Add("food", 2f);
-                needs.Change("hunger", -5f);
-            }
+            currentTarget = FindNearest("FishingSpot");
+            if (currentTarget == null) return false;
+            SetState("Fishing");
         }
         return true;
     }
 
     bool Build()
     {
-        var site = FindNearest("BuildSite");
-        if (site == null) return false;
-
-        SetState("Building");
-        MoveTo(site.transform.position);
-        if (Vector3.Distance(transform.position, site.transform.position) < 2.5f)
+        if (currentTarget == null)
         {
-            stats.buildingsConstructed++;
-            ResourceManager.Instance.Spend("wood", 10f);
-            NotificationManager.Instance.Show(stats.name + " bir yapı tamamladı!", NotificationType.Social);
+            currentTarget = FindNearest("BuildSite");
+            if (currentTarget == null) return false;
+            SetState("Building");
         }
         return true;
     }
+
+    // --- MEVCUT İŞİ SÜRDÜRME MOTORU ---
+    void ContinueCurrentTask()
+    {
+        // Hedef bir şekilde yok olduysa (ağaç kesilip bittiyse vb.) işi bırak
+        if (currentTarget == null || !currentTarget.activeInHierarchy)
+        {
+            ClearCurrentTask();
+            SetState("Idle");
+            return;
+        }
+
+        float dist = Vector3.Distance(transform.position, currentTarget.transform.position);
+
+        // AŞAMA 1: YÜRÜME
+        if (dist > 2.5f)
+        {
+            MoveTo(currentTarget.transform.position);
+        }
+        // AŞAMA 2: HEDEFE ULAŞTI, ÇALIŞMA
+        else
+        {
+            agent.isStopped = true; // Hedefe varınca fren yap
+
+            if (currentState == "ChoppingWood")
+            {
+                float amount = stats.workSpeed;
+                if (cards.HasCard("Sinir") && emotions.GetI("Angry") > 0.5f) amount *= 1.5f;
+                ResourceManager.Instance.Add("wood", amount * Time.deltaTime * 2f); // BT_TICK (2s) kadar odun ver
+            }
+            else if (currentState == "Fishing")
+            {
+                float chance = InventionManager.Instance.IsDiscovered("FishingNet") ? 0.8f : 0.5f;
+                if (Random.value < chance) // Saniyeye bölmeye gerek yok, 2 saniyede bir zar atıyoruz
+                {
+                    ResourceManager.Instance.Add("food", 2f);
+                    needs.Change("hunger", -5f);
+                }
+            }
+            else if (currentState == "Building")
+            {
+                stats.buildingsConstructed++;
+                ResourceManager.Instance.Spend("wood", 10f);
+                NotificationManager.Instance.Show(stats.name + " bir yapı tamamladı!", NotificationType.Social);
+                ClearCurrentTask(); // İnşaat bitince hedefi sıfırla ki başka işe geçsin
+            }
+        }
+    }
+
 
     void HealNearby()
     {
