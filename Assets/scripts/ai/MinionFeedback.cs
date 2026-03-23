@@ -39,6 +39,10 @@ public class MinionFeedback : MonoBehaviour
 
     public void ShowText(string text, Color color)
     {
+        statusText.gameObject.SetActive(true);
+        emojiImage.gameObject.SetActive(true);
+        timer = displayDuration; // Sayacý sýfýrla ki hemen kapanmasýn
+
         statusText.text = text;
         statusText.color = color;
         statusText.gameObject.SetActive(true);

@@ -22,7 +22,6 @@ GameObject:
   - component: {fileID: 3983896407924218962}
   - component: {fileID: 356786866866021991}
   - component: {fileID: 5276523588770838158}
-  - component: {fileID: -4013830668848531195}
   m_Layer: 0
   m_Name: "minyo\xE7"
   m_TagString: Untagged
@@ -331,26 +330,6 @@ MonoBehaviour:
   disrespect: 0
   injustice: 0
   stress: 0
---- !u!114 &-4013830668848531195
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2833460444400246381}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b9fbf1f4c49940a43b67eef297870af3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MinionFeedback
-  heartEmoji: {fileID: 21300000, guid: 41bd00d18f5cb784a9d0f243f2685d07, type: 3}
-  skullEmoji: {fileID: 21300000, guid: b498a0f614534eb4c8ae2eb865589821, type: 3}
-  sickEmoji: {fileID: 21300000, guid: fe8ae19f34017ff449887587fa0c8469, type: 3}
-  woodEmoji: {fileID: 21300000, guid: b79e8e8c970861542b2c725750d265bc, type: 3}
-  fishEmoji: {fileID: 21300000, guid: adb18da2fab77344ca09d286df8bd2a2, type: 3}
-  statusText: {fileID: 4131313248708697964}
-  emojiImage: {fileID: 5423317910339038134}
-  displayDuration: 2.5
 --- !u!1001 &4282893018738312242
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -359,6 +338,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 6079697456127336161}
     m_Modifications:
+    - target: {fileID: 160646347911879518, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
+      propertyPath: m_VerticalAlignment
+      value: 512
+      objectReference: {fileID: 0}
+    - target: {fileID: 160646347911879518, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
+      propertyPath: m_HorizontalAlignment
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 5847209490827196278, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -401,7 +388,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5847209490827196278, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.49977
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5847209490827196278, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
       propertyPath: m_LocalRotation.w
@@ -421,11 +408,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5847209490827196278, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0.01515
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5847209490827196278, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 1.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5847209490827196278, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -439,14 +426,33 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6461469397652765422, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -3.0300293
+      objectReference: {fileID: 0}
+    - target: {fileID: 6461469397652765422, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 200
+      objectReference: {fileID: 0}
     - target: {fileID: 7373675108309766310, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
       propertyPath: m_Name
       value: MinionCanvas
       objectReference: {fileID: 0}
+    - target: {fileID: 8053873527188962564, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 73
+      objectReference: {fileID: 0}
+    - target: {fileID: 8083005192173285252, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7373675108309766310, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7454103989057172195}
   m_SourcePrefab: {fileID: 100100000, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
 --- !u!114 &4131313248708697964 stripped
 MonoBehaviour:
@@ -470,6 +476,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+--- !u!1 &6718080864537040020 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7373675108309766310, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
+  m_PrefabInstance: {fileID: 4282893018738312242}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7454103989057172195
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6718080864537040020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9fbf1f4c49940a43b67eef297870af3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MinionFeedback
+  heartEmoji: {fileID: 21300000, guid: 41bd00d18f5cb784a9d0f243f2685d07, type: 3}
+  skullEmoji: {fileID: 21300000, guid: b498a0f614534eb4c8ae2eb865589821, type: 3}
+  sickEmoji: {fileID: 21300000, guid: fe8ae19f34017ff449887587fa0c8469, type: 3}
+  woodEmoji: {fileID: 21300000, guid: b79e8e8c970861542b2c725750d265bc, type: 3}
+  fishEmoji: {fileID: 21300000, guid: adb18da2fab77344ca09d286df8bd2a2, type: 3}
+  statusText: {fileID: 4131313248708697964}
+  emojiImage: {fileID: 5423317910339038134}
+  displayDuration: 2.5
 --- !u!224 &7659095259525804868 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5847209490827196278, guid: cf5ecae9abe276540a05eee3df4e8218, type: 3}
