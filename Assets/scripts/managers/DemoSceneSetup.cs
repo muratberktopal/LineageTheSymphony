@@ -45,7 +45,7 @@ public class DemoSceneSetup : MonoBehaviour
 
         // Kaynakları başlat
         ResourceManager.Instance.woodCount  = 15f;
-        ResourceManager.Instance.foodCount  = 10f;
+        ResourceManager.Instance.foodCount  = 3f;
         ResourceManager.Instance.waterCount = 20f;
     }
 
@@ -63,36 +63,7 @@ public class DemoSceneSetup : MonoBehaviour
         // var surface = ground.AddComponent<NavMeshSurface>();
         // surface.BuildNavMesh();
 
-        // Ağaçlar
-        for(int i = 0; i < 6; i++)
-        {
-            var tree = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            tree.name = "Tree_" + i;
-            tree.tag  = "Tree";
-            tree.transform.position = new Vector3(
-                Random.Range(-10f, 10f), 0.5f, Random.Range(-10f, 10f));
-            tree.transform.localScale = new Vector3(0.3f, 1f, 0.3f);
-            tree.GetComponent<Renderer>().material.color = new Color(0.3f, 0.5f, 0.2f);
-        }
-
-        // Balık noktaları
-        for(int i = 0; i < 2; i++)
-        {
-            var spot = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            spot.name = "FishingSpot_" + i;
-            spot.tag  = "FishingSpot";
-            spot.transform.position = new Vector3(Random.Range(-8f, 8f), 0.1f, Random.Range(-8f, 8f));
-            spot.transform.localScale = Vector3.one * 0.5f;
-            spot.GetComponent<Renderer>().material.color = new Color(0.2f, 0.5f, 0.9f);
-        }
-
-        // İnşaat alanı
-        var buildSite = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        buildSite.name = "BuildSite";
-        buildSite.tag  = "BuildSite";
-        buildSite.transform.position = new Vector3(3f, 0.25f, 3f);
-        buildSite.transform.localScale = new Vector3(1f, 0.5f, 1f);
-        buildSite.GetComponent<Renderer>().material.color = new Color(0.8f, 0.7f, 0.5f);
+        
 
         // Minyonları oluştur
         SpawnMinyon("Ahmet", false, new Vector3(-2f, 0f, -2f), new[]{"Sinir","Oduncu"});
@@ -101,18 +72,18 @@ public class DemoSceneSetup : MonoBehaviour
 
     void BuildPrefabScene()
     {
+        // ŞU KISIMLARI YORUM SATIRI YAP VEYA SİL:
+        /*
         if(treePrefab != null)
-            for(int i = 0; i < 6; i++)
-                Instantiate(treePrefab, new Vector3(
-                    Random.Range(-12f,12f), 0f, Random.Range(-12f,12f)), Quaternion.identity);
+            for(int i = 0; i < 6; i++) ...
 
         if(fishingSpotPrefab != null)
-            for(int i = 0; i < 2; i++)
-                Instantiate(fishingSpotPrefab, new Vector3(
-                    Random.Range(-8f,8f), 0f, Random.Range(-8f,8f)), Quaternion.identity);
+            for(int i = 0; i < 2; i++) ...
+        */
 
-        SpawnMinyon("Ahmet", false, new Vector3(-2f, 0f, -2f), new[]{"Sinir","Oduncu"});
-        SpawnMinyon("Ayşe",  true,  new Vector3(2f,  0f, -2f), new[]{"Sosyal","Avcı"});
+        // Minyonları oluştur (BU KALSIN)
+        SpawnMinyon("Ahmet", false, new Vector3(-2f, 0f, -2f), new[] { "Sinir", "Oduncu" });
+        SpawnMinyon("Ayşe", true, new Vector3(2f, 0f, -2f), new[] { "Sosyal", "Avcı" });
     }
 
     // ── MİNYON SPAWN ─────────────────────────────────────

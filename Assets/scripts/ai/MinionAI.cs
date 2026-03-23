@@ -18,7 +18,7 @@ public class MinionAI : MonoBehaviour
 {
     [Header("Veri")]
     public MinionStats stats = new MinionStats();
-
+    private Vector3 lastMoveTarget = Vector3.zero;
     [Header("Durum")]
     public string currentState = "Idle";
     public string lastState    = "Idle";
@@ -561,7 +561,7 @@ public class MinionAI : MonoBehaviour
 
         SetState("ChoppingWood");
         MoveTo(tree.transform.position);
-        if (Vector3.Distance(transform.position, tree.transform.position) < 2.5f)
+        if (Vector3.Distance(transform.position, tree.transform.position) < 100.0f)
         {
             float amount = stats.workSpeed;
             if (cards.HasCard("Sinir") && emotions.GetI("Angry") > 0.5f) amount *= 1.5f;
@@ -577,7 +577,7 @@ public class MinionAI : MonoBehaviour
 
         SetState("Fishing");
         MoveTo(spot.transform.position);
-        if (Vector3.Distance(transform.position, spot.transform.position) < 2.5f)
+        if (Vector3.Distance(transform.position, spot.transform.position) < 100.0f)
         {
             float chance = InventionManager.Instance.IsDiscovered("FishingNet") ? 0.8f : 0.5f;
             if (Random.value < chance * Time.deltaTime)
@@ -771,15 +771,20 @@ public class MinionAI : MonoBehaviour
 
     void MoveTo(Vector3 pos)
     {
-        if (!agent.isActiveAndEnabled) return;
+        if (!agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
 
-        agent.isStopped = false; // Kilidi aç
+        agent.isStopped = false; // Freni mutlaka bırak
 
-        // Hedef değişmediyse ve zaten bir yoldaysak, tekrar SetDestination ÇAĞIRMA (Kekemeliği önler)
-        if (!agent.hasPath || Vector3.Distance(agent.destination, pos) > 1.5f)
+        // Hedef nokta 1 birimden fazla değişmediyse, ROTA HESAPLAMASINI TEKRARLAMA!
+        if (Vector3.Distance(lastMoveTarget, pos) > 1f)
         {
-            if (NavMesh.SamplePosition(pos, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+            lastMoveTarget = pos;
+
+            // 10 birimlik çapta güvenli zemin bul
+            if (NavMesh.SamplePosition(pos, out NavMeshHit hit, 10f, NavMesh.AllAreas))
                 agent.SetDestination(hit.position);
+            else
+                agent.SetDestination(pos); // Bulamazsa zorla
         }
     }
 
